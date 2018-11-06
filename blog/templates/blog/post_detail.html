@@ -1,0 +1,90 @@
+{% extends "blog/layout.html" %}
+{% load bootstrap3 %}
+
+{% block extra_body %}
+
+<script>
+$(function() {
+    $('#check-comment').click(function(e) {
+        e.preventDefault();
+
+        var comment_id = $('#comment-list .comment:first').data('comment-id');
+
+        $.get('{% url "blog:comment_list" post.pk %}', {latest_comment_id: comment_id})
+            .done(function(html) {
+                $('#comment-list').prepend(html);
+            })
+            .fail(function() {
+                alert('failed : ' + error);
+            });
+    });
+
+    $.get('{% url "blog:comment_list" post.pk %}')
+        .done(function(html) {
+            $('#comment-list').html(html);
+        })
+        .fail(function(xhr, textStatus, error) {
+            alert('failed : ' + error);
+        });
+
+
+
+    //좋아요 버튼 클릭시 발생하는 함수
+    $("#post_like_button").click(function() {
+        var like_url = $(this).data('url');
+        var target_id = $(this).data('target-id');
+        console.log(like_url); // -> /1/like/ 가 출력 (첫번째 글 좋아요 버튼 클릭시..)
+        $.get(like_url).
+            done(function(data) {
+                console.log(data);
+                $('#' + target_id).html(data.like_count);
+                console.log(target_id); // -> post_1_like_count 가 출력.
+            }).
+            fail(function() {
+                alert('failed');
+            });
+        return false;
+    });
+
+
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12">
+            <h1>{{ post.title }}</h1>
+            {{ post.content|linebreaks }}
+
+            <hr/>
+
+            <a href="{% url 'blog:comment_new' post.pk %}"
+               class="modal-form-btn btn btn-primary btn-block">댓글쓰기</a>
+
+            <a id="check-comment" class="btn btn-primary btn-block">
+                새 댓글 체크
+            </a>
+
+            <div id="comment-list"></div>
+
+            <hr/>
+
+            <a href="{% url 'blog:index' %}" class="btn btn-primary">목록</a>
+            <a href="{% url 'blog:post_edit' post.pk %}" class="btn btn-primary">수정</a>
+            <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-danger">삭제</a>
+                <td>
+                    <span class="btn btn-primary" id="post_like_button"
+                        data-url="{% url 'blog:post_like' pk=post.pk %}"
+                        data-target-id="post_{{ post.id }}_like_count">좋아요
+                        <span id="post_{{ post.id }}_like_count">{{ post.like_count }}</span></span>
+                </td>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}
+

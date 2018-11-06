@@ -1,0 +1,11 @@
+{% comment %}ajax로 바뀌는 부분만 추가해주는거 레이아웃을 뺀 순수코드만{% endcomment %}
+{% for post in post_list %}
+    <tr>
+        <td>
+            <a href="{{ post.get_absolute_url }}">
+                {{ post.title }}
+            </a>
+        </td>
+    </tr>
+{% endfor %}
+

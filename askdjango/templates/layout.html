@@ -1,0 +1,187 @@
+{% load static %}
+<!doctype html>
+<html xmlns:blog="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta charset="utf-8" />
+        <title>AskDjango Blog</title>
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.7/flatly/bootstrap.min.css" />
+        {% block extra_head %}{% endblock %}
+    </head>
+    <body>
+        <nav class="navbar navbar-default">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">AskDjango</a>
+                </div>
+                <div id="navbar" class="collapse navbar-collapse">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="{% url 'blog:index' %}">Blog</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        {% if not user.is_authenticated %}
+                            <li><a href="{% url 'login' %}?next={{ request.path }}" class="modal-form-btn">로그인</a></li>
+                            <li><a href="{% url 'signup' %}" class="modal-form-btn">회원가입</a></li>
+                        {% else %}
+                            <li><a href="{% url 'profile' %}">프로필</a></li>
+
+                        {% endif %}
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+        </nav>
+
+        {% block content %}
+        {% endblock %}
+
+        <div class="container">
+            <hr />
+
+            <footer>
+                <p>2017 &copy; <a href="https://nomade.kr" target=_blank">nomade.kr</a></p>
+            </footer>
+        </div>
+
+        <!--<script src="{% static 'jquery/dist/jquery.min.js' %}"></script>-->
+        <!--<script src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}"></script>-->
+        <!--<script src="{% static 'askdjango/jquery.csrf.js' %}"></script>-->
+        <!--<script src="{% static 'underscore/underscore-min.js' %}"></script>-->
+        <!--<script src="{% static 'jquery-form/dist/jquery.form.min.js' %}"></script>-->
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.2.2/jquery.form.min.js"></script>
+        <script src="{% static 'askdjango/jquery.csrf.js' %}"></script>
+        {% block extra_body %}
+        {% endblock %}
+
+    <script>
+$(function() {
+    $(document).on('click', '.modal-form-btn', function(e) {
+        e.preventDefault();
+
+        var action_url = $(this).attr('href');
+        var target_id = $(this).data('target-id');
+
+        $.get(action_url)
+            .done(function(form_html) {
+                var $modal = $('#modal-form-modal');
+                $modal.find('.modal-body').html(form_html);
+                $form = $modal.find('.modal-body form');
+                $form.attr('action', action_url);
+
+                if ( target_id ) {
+                    $form.attr('data-target-id', target_id); // modal form에 data-target-id를 기록
+                }
+                else {
+                    $form.removeData('target-id'); // modal창이 뜰때마다 form태그가 새로이 지정되어서 불필요
+                }
+
+                $modal.on('shown.bs.modal', function(e) {
+                    $(this).find('textarea:first').focus();
+                });
+
+                $modal.modal();
+            })
+            .fail(function(xhr, textStatus, error) {
+                alert('failed : ' + error);
+            });
+    });
+
+    $(document).on('submit', '#modal-form-modal form', function(e) {
+        e.preventDefault();
+
+        var $form = $(this);
+        var $submit = $form.find('[type=submit]');
+
+        $submit.prop('disabled', true);
+
+        $form.ajaxSubmit({
+            success: function(response, statusText, xhr, $form) {
+                if ( response.next_url ) {
+                    window.location = response.next_url;
+                    return;
+                }
+
+                var html = response;
+
+                var $resp = $(html);
+                var target_id = $form.data('target-id');
+
+                console.log(html);
+
+                if ( $resp.find('.has-error').length > 0 ) {
+                    // validation 에러일 경우, 에러 HTML 응답
+                    // form 태그의 속성정보는 그대로 유지하고, 필드 HTML 만 변경
+                    var fields_html = $resp.html();
+                    $('#modal-form-modal .modal-body form').html(fields_html);
+                }
+                else {
+                    if ( target_id ) {
+                        $('#' + target_id).html($resp.html());
+                    }
+                    else {
+                        $resp.prependTo('#comment-list');
+                    }
+
+                    $('#modal-form-modal').modal('hide');
+                    $form[0].reset();
+                }
+            },
+            error: function(xhr, textStatus, error) {
+                alert('failed : ' + error);
+            },
+            complete: function(xhr, textStatus) {
+            }
+        });
+    });
+
+    $(document).on('click', '.ajax-post-confirm', function(e) {
+        e.preventDefault();
+
+        var url = $(this).attr('href');
+        var target_id = $(this).data('target-id');
+        var message = $(this).data('message');
+
+        if ( confirm(message) ) {
+            $.post(url)
+                .done(function() {
+                    $('#' + target_id).remove();
+                })
+                .fail(function(xhr, textStatus, error) {
+                    alert('failed : ' + error);
+                });
+        }
+    });
+
+});
+    </script>
+
+    <div class="modal fade" id="modal-form-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Comment Form</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ...<br/>
+                    ...<br/>
+                    ...<br/>
+                    ...<br/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </body>
+</html>
+

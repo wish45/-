@@ -1,0 +1,32 @@
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="http://www.chartjs.org/dist/2.7.0/Chart.bundle.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+$(function() {
+    $.get('{% url "data_json" %}')
+        .done(function(chartData) {
+            var ctx = document.getElementById('canvas').getContext('2d');
+            window.chart = new Chart(ctx, {
+                type: 'line',
+                data: chartData
+            });
+        })
+        .fail(function(xhr, textStatus, error) {
+            alert('failed : ' + error);
+        });
+});
+</script>
+
+</body>
+
+</html>
+

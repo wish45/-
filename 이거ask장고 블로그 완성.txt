@@ -1,0 +1,11 @@
+django
+bootstrap3
+easy-thumbnail
+django-chartjs
+djangorestframework
+requests
+beautifulsoup4
+
+
+<li><a href="{% url 'profile' %}">프로필</a></li>
+<li><a href="{% url 'logout' %}?next={{ request.path }}">로그아웃</a></li>

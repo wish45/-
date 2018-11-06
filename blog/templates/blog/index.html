@@ -1,0 +1,107 @@
+{% extends "blog/layout.html" %}
+{% load staticfiles %}
+<link rel='stylesheet' href="{% static 'blog/post_like.css' %}" />
+<script src="{% static 'blog/jquery-1.12.1.js' %}">add_js</script>
+<script src="{% static 'blog/post_like.js' %}"></script>
+
+{% block extra_body %}
+<script>
+$(function() {
+    var $win = $(window);
+    var is_loading = false;
+    var current_page = null;
+    var load_more = function() { //read more 버튼
+        if ( ! is_loading ) {
+            var next_page = (current_page || 1) + 1;  /*current_page가 거짓이면 || 1 사용 */
+            var next_page_url = '?page=' + next_page;
+            is_loading = true;
+
+            $.get(next_page_url). /*현재 url*/
+                done(function(html) {
+                    $('#post-list tbody').append(html); /*id가 post_list밑에 tbody에 추가해줌.*/
+                    current_page = next_page;
+                }).
+                fail(function(xhr, textStatus, error) {
+                    console.log(textStatus);
+                })
+                .always(function() {
+                    console.log("always");
+                    is_loading = false;
+                });
+        }
+    };
+
+    $win.scroll(function() { //윈도우 스크롤 내려도 새로고침 된다.
+        var diff = $(document).height() - parseInt($win.height());
+        if ( diff == $win.scrollTop() ) {
+            console.log("바닥에 왔음.");
+            load_more();
+        }
+    });
+
+    $('#load-more-btn').click(load_more); //load_more버튼 눌러도 글목록 새로고침되고
+
+    $(document).on('click', '#post-list a', function(e) {
+        e.preventDefault();
+        var detail_url = $(this).attr('href');//pk값이 찍힌다.
+        console.log(detail_url);
+
+        $.get(detail_url)
+            .done(function(json_obj) {
+                var $modal = $('#post-modal');
+                $modal.find('.modal-title').html(json_obj.title);
+                $modal.find('.modal-body').html(json_obj.summary);
+                $modal.find('.btn-detail').attr('href', detail_url);
+                $modal.modal();
+            })
+            .fail(function(xhr, textStatus, error) {
+                alert('failed : ' + error);
+            });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+    <!--리드모어 버튼과 새글쓰기 버튼 부분-->
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <table class="table table-bordered table-hover" id="post-list">
+                    <tbody>
+                        {% include "blog/_post_list.html" %}
+                    </tbody>
+                </table>
+
+                <a id="load-more-btn" class="btn btn-primary">Load More ...</a>
+
+                <hr/>
+                <a href="{% url 'blog:post_new' %}" class="btn btn-primary">새 글쓰기</a>
+            </div>
+        </div>
+    </div>
+
+    <!--글제목 눌렀을때 뜨는 모달창-->
+    <div class="modal fade" id="post-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">포스팅 제목</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ...<br/>
+                    ...<br/>
+                    ...<br/>
+                    ...<br/>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                    <a class="btn btn-primary btn-detail">자세히</a> </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
